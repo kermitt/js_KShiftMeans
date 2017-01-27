@@ -20,9 +20,6 @@ function emptyVector(n) {
     return a;
 }
 
-
-
-
 function len(map) {
     let count = 0;
     for (var key in map) {
@@ -38,21 +35,22 @@ var KSM = {
         }
     },
 
-	findAverages : function(centroid) {
-		var totals = emptyVector(this.number_of_dimensions);
-		for (var memberid in centroid.memberIds) {
-			let lookupKey = centroid.memberIds[memberid];
-			let d = this.data[lookupKey];
-//			say(memberid + " v " + d.vector);
-			for ( var i = 0; i < this.number_of_dimensions; i++ ) {
-				totals[i] += d.vector[i];
-			}
-		}
-		for ( var i = 0; i < this.number_of_dimensions; i++ ) {
-			totals[i] /= centroid.memberIds.length;
-		}
-		centroid.vector = totals;
-	},
+    findAverages: function(centroid) {
+        var totals = emptyVector(this.number_of_dimensions);
+
+        for (var memberid in centroid.memberIds) {
+            let lookupKey = centroid.memberIds[memberid];
+            let d = this.data[lookupKey];
+
+            for (var i = 0; i < this.number_of_dimensions; i++) {
+                totals[i] += d.vector[i];
+            }
+        }
+        for (var i = 0; i < this.number_of_dimensions; i++) {
+            totals[i] /= centroid.memberIds.length;
+        }
+        centroid.vector = totals;
+    },
 
     move: function() {
 
@@ -65,48 +63,16 @@ var KSM = {
                 }
             }
 
-            for (var key in this.data) {
-                //say(key + " | " + this.data[key].centroidId + " | " + this.data[key].distance + "     " + this.data[key].vector);
-            }
             let count = len(this.centroids);
-            say("Centroids: " + count);
             for (var key in this.centroids) {
-
                 if (this.centroids[key].memberIds.length == 0) {
                     delete this.centroids[key];
                 } else {
-                    //			say(this.centroids[key].showMembers());
-                    say(this.centroids[key].describe() + "   count " + this.centroids[key].memberIds.length);
-
-                    //say("\t\tthis.centroids[key].memberIds: " + this.centroids[key].memberIds);
-                    var totals = this.findAverages(this.centroids[key]); 
-
-
-
-                    /*
-                    var totals = emptyVector(count);
-					for (var memberid in this.centroids[key].memberIds) {
-						let lookupKey = this.centroids[key].memberIds[memberid];
-						let d = this.data[lookupKey];
-						say(memberid + " v " + d.vector);
-
-
-					}
-					*/
-                    /*
-                    for (var id in this.centroids[key].memberIds) {
-                        for (let i = 0; i < this.data[id].vector.length; i++) {
-                            totals += this.data[id].vector[i];
-                        }
-                    }
-                    for (var i = 0; i < count; i++) {
-                        totals[i] /= count;
-                    }
-                    */
-//                    this.centroids[key].vectors = totals;
+                    say(this.centroids[key].describe() + "   members: " + this.centroids[key].memberIds.length );
+                    var totals = this.findAverages(this.centroids[key]);
                 }
             }
-            say("-----------");
+            say("...");
         }
     },
     init: function(data, number_of_centroids, number_of_dimensions, min, max) {
@@ -121,6 +87,7 @@ var KSM = {
         for (var i = 0; i < number_of_centroids; i++) {
             this.centroids[i] = new Vector(i);
             var a = randomVector(number_of_dimensions, min, max);
+            console.log(number_of_dimensions + " min " + min + "   max " + max ) ; 
             this.centroids[i].vector = a;
         }
         this.move();
@@ -210,7 +177,7 @@ Vector.prototype.addInfo = function(location) {
 Vector.prototype.describe = function() {
     let out = this.id + " | ";
     for (let i in this.vector) {
-        out += this.vector[i] + " |      "; // + this.vector.length;
+        out += this.vector[i].toFixed(2) + " |      "; // + this.vector.length;
     }
     return out;
 }
@@ -244,7 +211,6 @@ Vector.prototype.showMembers = function() {
     if (this.memberIds.length > 0 && debug) {
         out += "\n";
         for (var i in this.memberIds) {
-            //			console.log(this.memberIds[i]);
             out += this.memberIds[i] + "\n";
         }
     }
@@ -260,12 +226,3 @@ try {
 } catch (error) {
     console.log("Error: " + error);
 }
-
-/*
-step1: Given in objects, init k centroids
-step2: assign each object to its closest centroid
-step3: update each centroid
-step4: step 2 and 3 until no change
-e.g., Cards
-pink blue yellow
-*/
