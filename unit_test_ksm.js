@@ -1,6 +1,8 @@
 "use strict";
 var KSM = require("./ksm").KSM;
 var CosignSimilarity = require("./ksm").CosignSimilarity;
+var Vector = require("./ksm").Vector;
+var len = require("./ksm").len;
 var data = {};
 
 function setup() {
@@ -26,6 +28,10 @@ function setup() {
         data[label] = vector;
     }
 
+
+
+
+
     KSM.init(data, centroid_count, dimensions, least, most);
 }
 
@@ -42,6 +48,17 @@ function cosignSimilarity_test() {
     let less_different = CosignSimilarity.findSimilarity(a, b);
     if (debug)
         say(" : less_different: " + less_different + " a: " + a + "    b: " + b);
+    a = [0, 0, 0, 0, 0, 0];
+    b = [-1, 1, 0, 0, 0, 0];
+    let pretty_different = CosignSimilarity.findSimilarity(a, b);
+    if (debug)
+        say(" : pretty_different: " + pretty_different + " a: " + a + "    b: " + b);
+
+    a = [1, 2, 3, 4, 5, 6];
+    b = [1, 5, -2, 4, 5, 6];
+    let somewhat_different = CosignSimilarity.findSimilarity(a, b);
+    if (debug)
+        say(" : somewhat_different: " + somewhat_different + " a: " + a + "    b: " + b);
 
     a = [1, 2, 3, 4, 5, 6];
     b = [1, 2, 3, 4, 5, 6];
@@ -49,26 +66,11 @@ function cosignSimilarity_test() {
     if (debug)
         say(" : the_same: " + the_same + " a: " + a + "    b: " + b);
 
-    a = [1, 2, 3, 4, 5, 6];
-    b = [1, 5, -2, 4, 5, 6];
-    let somewhat_different = CosignSimilarity.findSimilarity(a, b);
-    if (debug)
-        say(" : somewhat_different: " + somewhat_different + " a: " + a + "    b: " + b);
-    var isOk = true;
-    isOk &= -1 == very_different;
-    isOk &= 1 == the_same;
-    isOk &= somewhat_different > 0.8 && somewhat_different < 0.9;
-
-    a = [0, 0, 0, 0, 0, 0];
-    b = [-1, 1, 0, 0, 0, 0];
-    let pretty_different = CosignSimilarity.findSimilarity(a, b);
-    if (debug)
-        say(" : pretty_different: " + pretty_different + " a: " + a + "    b: " + b);
-
-    var isOk = true == pretty_different == somewhat_different == the_same == very_different;
+    var isOk = false;
+    if ( very_different > the_same ) {
+    	isOk = true;
+    }
     log(isOk, "cosignSimilarity_test: vector cosign compare");
-
-
 }
 
 function say(message) {
@@ -80,6 +82,55 @@ function log(verdict, message) {
     console.log(isOk + "|" + message);
 }
 
+function detectDelta_test() {
+
+	// fake set up what the centroids map looks like at time 'before'
+
+	var v1 = new Vector("one");
+	v1.addNode("a");
+	v1.addNode("b");
+	v1.addNode("c");
+
+	var v2 = new Vector("two");
+	v2.addNode("d");
+	v2.addNode("e");
+	v2.addNode("f");
+
+	var map_at_loop1 = {};
+	map_at_loop1["one"] = v1;
+	map_at_loop1["two"] = v2;
+
+	var map_at_loop2 = {};
+	map_at_loop2["one"] = v1;
+	map_at_loop2["two"] = v2;
+
+	var expected_result = true; // loop1 and loop2 are the same
+
+	function mapsHaveDelta(map1, map2) {
+		var delta = false;
+
+		if ( len(map_at_loop1) != len(map_at_loop2)) {
+			return true;
+		} 	
+
+		
+	}
+
+expected_result = mapsHaveDelta(map_at_loop1,map_at_loop2);
+
+
+	say("one: " + len(map_at_loop1));
+	say("two: " + len(map_at_loop2));
+	// fake set up what the centroids map looks like at time 'after'
+
+
+	say(v1.showMembers());
+	log(expected_result, "detectDelta_test");
+}
+
 setup();
 cosignSimilarity_test();
+
+detectDelta_test();
+
 say("The end");

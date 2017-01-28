@@ -54,7 +54,7 @@ var KSM = {
 
     move: function() {
 
-        for (var j = 0; j < 3; j++) {
+        for (var j = 0; j < 13; j++) {
             this.rebase();
             for (var i = 0; i < 1; i++) {
                 for (var key in this.data) {
@@ -65,17 +65,41 @@ var KSM = {
 
             let count = len(this.centroids);
             for (var key in this.centroids) {
-                if (this.centroids[key].memberIds.length == 0) {
+                if (this.centroids[key].memberIds.length < 5) {
                     delete this.centroids[key];
                 } else {
-                    say(this.centroids[key].describe() + "   members: " + this.centroids[key].memberIds.length );
+                    //say(this.centroids[key].describe() + "   members: " + this.centroids[key].memberIds.length);
+       //             say( j + "\t" + key + "\t" + this.centroids[key].memberIds.length);
                     var totals = this.findAverages(this.centroids[key]);
                 }
             }
-            say("...");
+            say( j + " ...");
         }
+
+
+            for (var key in this.centroids) {
+            	var out = "";
+            	for ( var i = 0 ; i < this.centroids[key].memberIds.length; i++) {
+
+            		out += this.centroids[key].memberIds[i] + ",";
+       //             say( j + "\t" + key + "\t" + this.centroids[key].memberIds.length);
+       //             var totals = this.findAverages(this.centroids[key]);
+                }
+                console.log( "update feedback set topic = '" + key + "' where rowid in (" + out + ")"); 
+            }
+
+
+
+
+
+
     },
     init: function(data, number_of_centroids, number_of_dimensions, min, max) {
+		//for ( var key in data ) {
+    	//	say(key + " | " + data[key]);
+    	//}
+		//say(".....................");
+
         this.number_of_centroids = number_of_centroids;
         this.number_of_dimensions = number_of_dimensions;
         this.data = {};
@@ -87,7 +111,6 @@ var KSM = {
         for (var i = 0; i < number_of_centroids; i++) {
             this.centroids[i] = new Vector(i);
             var a = randomVector(number_of_dimensions, min, max);
-            console.log(number_of_dimensions + " min " + min + "   max " + max ) ; 
             this.centroids[i].vector = a;
         }
         this.move();
@@ -207,7 +230,7 @@ Vector.prototype.addNode = function(memberId) {
 
 Vector.prototype.showMembers = function() {
     let out = "Centroid " + this.id + " with " + this.memberIds.length + " members";
-    let debug = false;
+    let debug = true;
     if (this.memberIds.length > 0 && debug) {
         out += "\n";
         for (var i in this.memberIds) {
@@ -223,6 +246,9 @@ try {
     /* Exports for testing, because node. When in actual use this will be called from a webpage - not via node */
     module.exports.KSM = KSM;
     module.exports.CosignSimilarity = CosignSimilarity;
+	module.exports.Vector = Vector;
+	module.exports.len = len;
+
 } catch (error) {
     console.log("Error: " + error);
 }
