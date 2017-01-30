@@ -51,9 +51,19 @@ var KSM = {
 
         // Step3: Move! Divide the vector spaces by the number of donations
         // to find the ave location. Set the centroid's vector to that.
-        for (var key in this.centroid) {
-            this.centroid[key].findVectorAverage();
+        let delete_these = [];
+        for (var key in this.centroids) {
+            this.centroids[key].findVectorAverage();
+            if (  this.centroids[key].memberIds.length < 6) {
+                delete_these.push(key);
+            }
         }
+
+        for ( var index in delete_these) {
+            var key = delete_these[index];
+            delete this.centroids[key];
+        }
+
     },
 
     init: function(incoming_data, number_of_centroids, ranges) {
@@ -72,15 +82,21 @@ var KSM = {
             var vector = [];
             for (var j = 0; j < ranges.length; j++) {
                 let min = 0;
-                let max = ranges[j];
+                let max = ranges[j] + 1; // just a little overlap
                 let result = Math.random() * (max - min) + min;
                 vector[j] = result;
             }
             this.centroids[i].vector = vector;
         }
-        for (var i = 0; i < 20; i++) {
+        for (var i = 0; i < 2; i++) {
             let thisTime = [];
             this.move();
+
+
+            //for (var key in this.centroids) {
+            //    console.log(this.centroids[key].describe() + "\t\t" + this.centroids[key].memberIds.length);
+            //}
+            //console.log("...");
         }
 
         var count = 0;
@@ -88,12 +104,12 @@ var KSM = {
             
             if ( this.centroids[key].memberIds.length > 0 ){
                 let ary = this.centroids[key].memberIds;
-                say(i + "   " + key + "    " + ary.length);
+                //say(i + "   " + key + "    " + ary.length);
                 count += ary.length;
 
                 let sql = "update feedback set topic=" + key + " where rowid in (" + ary + ");"; 
-                //console.log(sql);
-                console.log("members " + this.centroids[key].memberIds);
+                console.log(sql);
+                console.log(this.centroids[key].memberIds.length + "   | " + this.centroids[key].describe() + " ");
             }
         }
         say("Clustered " + count + " into " + len(this.centroids) + " clusters");
@@ -177,27 +193,26 @@ var Vector = function(id) {
     this.nextCentroidId = "";
     this.nextDistance = -1;
     this.memberIds = [];
-    this.donationCount = 0;
 }
 
 Vector.prototype.zeroOutVectorLocation = function() {
     for (var index in this.vector) {
         this.vector[index] = 0;
     }
-    this.donationCount = 0;
     this.memberIds = [];
 }
 
 Vector.prototype.donateVector = function(v, id) {
     for (var i = 0; i < v.length; i++) {
         this.vector[i] += v[i];
-        this.donationCount++;
     }
     this.memberIds.push(id);
 }
 Vector.prototype.findVectorAverage = function() {
     for (var i = 0; i < this.vector.length; i++) {
-        this.vector[i] /= this.donationCount;
+        var before = this.vector[i];
+        this.vector[i] /= this.memberIds.length;
+        //console.log("FVA: " + before + "    " + this.vector[i] + " and " + this.memberIds.length); 
     }
 }
 Vector.prototype.addInfo = function(location) {
@@ -207,7 +222,7 @@ Vector.prototype.addInfo = function(location) {
 Vector.prototype.describe = function() {
     let out = this.id + " | ";
     for (let i in this.vector) {
-        out += this.vector[i].toFixed(2) + " |      "; // + this.vector.length;
+        out += this.vector[i].toFixed(1) + " |      "; // + this.vector.length;
     }
     return out;
 }

@@ -36,7 +36,7 @@ fs.readFile('data.psv', 'utf8', function(err, data) {
 });
 
 function doClustering(data) {
-    let centroid_count = 10;
+    let centroid_count = 20;
 
     let find_max = 5;
     let use_max = 5;
