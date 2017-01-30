@@ -85,11 +85,18 @@ var KSM = {
 
         var count = 0;
         for (var key in this.centroids) {
-            say(i + "   " + key + "    " + this.centroids[key].memberIds.length);
-            count += this.centroids[key].memberIds.length
+            
+            if ( this.centroids[key].memberIds.length > 0 ){
+                let ary = this.centroids[key].memberIds;
+                say(i + "   " + key + "    " + ary.length);
+                count += ary.length;
+
+                let sql = "update feedback set topic=" + key + " where rowid in (" + ary + ");"; 
+                //console.log(sql);
+                console.log("members " + this.centroids[key].memberIds);
+            }
         }
         say("Clustered " + count + " into " + len(this.centroids) + " clusters");
-
         say("The end");
     },
     findClosestCentroid: function(datum) {
