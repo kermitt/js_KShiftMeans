@@ -33,7 +33,17 @@ var KSM = {
             var id_distance = this.findClosestCentroid(this.data[key]);
             let id = id_distance["id"];
             let distance = id_distance["distance"];
+            let id2 = id_distance["id2"];
+            let distance2 = id_distance["distance2"];
+
             this.data[key].setCentroid(id, distance);
+            this.data[key].setCentroid2(id2, distance2);
+
+
+//console.log("ICHI " + id + "  |   " + id2 + "    d | " + distance + "    | "  + distance2); 
+//console.log("  NI " +  this.data[key].centroidId + " " + this.data[key].nextCentroidId + " d " + this.data[key].distance + "   | " + this.data[key].nextDistance);
+
+
             //say(key + "  " + id + "   " + distance )
         }
 
@@ -99,6 +109,33 @@ var KSM = {
             //console.log("...");
         }
 
+        this.showResults();
+    },
+
+    showResults: function() {
+        console.log("SECONDARY ---------------"); 
+  
+        var secondCentroids ={}; 
+        for (var key in this.data) {
+            var id = this.data[key].nextCentroidId;
+            if ( ! secondCentroids.hasOwnProperty(id)) {
+                secondCentroids[id] = [];
+            }
+            secondCentroids[id].push(key);
+            //console.log(id + "   and  " + key ); 
+        }
+        for ( var key in secondCentroids) {
+            var ary = secondCentroids[key];
+            //console.log("SECONDN:" + key + "  |   "  + ary);
+            let sql = "update feedback set centroid2=" + key + " where rowid in (" + ary + ");"; 
+            console.log(sql);
+            console.log(key + "   |   "+ ary.length );
+        }
+
+
+
+
+        console.log("PRIMARY ---------------"); 
         var count = 0;
         for (var key in this.centroids) {
             
@@ -106,8 +143,7 @@ var KSM = {
                 let ary = this.centroids[key].memberIds;
                 //say(i + "   " + key + "    " + ary.length);
                 count += ary.length;
-
-                let sql = "update feedback set topic=" + key + " where rowid in (" + ary + ");"; 
+                let sql = "update feedback set centroid1=" + key + " where rowid in (" + ary + ");"; 
                 console.log(sql);
                 console.log(this.centroids[key].memberIds.length + "   | " + this.centroids[key].describe() + " ");
             }
@@ -118,18 +154,49 @@ var KSM = {
     findClosestCentroid: function(datum) {
         var distance = 1000000;
         var id = "undefined";
+        var id2 = "undefined";
+        var id_distance = {};
         for (var key in this.centroids) {
             let c = this.centroids[key];
             let d = CosignSimilarity.findSimilarity(datum.vector, c.vector);
-            if (d < distance) {
-                distance = d;
-                id = c.id;
+            if ( id_distance.hasOwnProperty(d)) {
+                // do nothing
+            } else {
+                id_distance[d] = c.id;
             }
+            id_distance[d] = c.id; 
+//            if (d < distance) {
+//                distance = d;
+//                id = c.id;
+//            }
         }
+        var keys = []; 
+        for ( var key in id_distance) {
+            keys.push(key);
+        }
+        keys.sort();
+
+
+
+        var id1 = id_distance[keys[0]];
+        var id2 = id_distance[keys[1]];
+        var distance1 = keys[0];
+        var distance2 = keys[1];
+
+
+//        console.log("id1 " + id1 + "  id2 " + id2 + "     d1 " + distance1 + "   d2 " + distance2 );
+
         return {
-            "id": id,
-            "distance": distance
+            "id": id1,
+            "distance": distance1,
+            "id2": id2,
+            "distance2": distance2
         };
+
+//        return {
+//            "id": id,
+//            "distance": distance
+//        };
     }
 }
 
@@ -235,11 +302,16 @@ Vector.prototype.zeroOut = function() {
     this.nextDistance = -1;
 }
 
-Vector.prototype.setCentroid = function(cid, distance) {
-    if (cid != this.centroidId) {
-        this.nextCentroidId = this.centroidId;
-        this.nextDistance = this.distance;
+Vector.prototype.setCentroid2 = function(cid, distance) {
+    // 2ndclosest
+    if ( cid != this.centroidId) {
+        this.nextCentroidId = cid;
+        this.nextDistance = distance;
     }
+}
+
+Vector.prototype.setCentroid = function(cid, distance) {
+    // closest
     this.centroidId = cid;
     this.distance = distance;
 }
