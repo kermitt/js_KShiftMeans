@@ -4,13 +4,6 @@ function say(s) {
     console.log(":\t" + s);
 }
 
-function randomVector(n, min, max) {
-    var a = [];
-    for (var i = 0; i < n; i++) {
-        a[i] = Math.random() * (max - min) + min;
-    }
-    return a;
-}
 
 function emptyVector(n) {
     var a = [];
@@ -29,105 +22,91 @@ function len(map) {
 }
 var KSM = {
 
-    rebase: function() {
+    move: function() {
+        // rebase
         for (var key in this.centroids) {
             this.centroids[key].zeroOut();
         }
-    },
 
-    findAverages: function(centroid) {
-        var totals = emptyVector(this.number_of_dimensions);
-
-        for (var memberid in centroid.memberIds) {
-            let lookupKey = centroid.memberIds[memberid];
-            let d = this.data[lookupKey];
-
-            for (var i = 0; i < this.number_of_dimensions; i++) {
-                totals[i] += d.vector[i];
-            }
-        }
-        for (var i = 0; i < this.number_of_dimensions; i++) {
-            totals[i] /= centroid.memberIds.length;
-        }
-        centroid.vector = totals;
-    },
-
-    move: function() {
-
-        for (var j = 0; j < 13; j++) {
-            this.rebase();
-            for (var i = 0; i < 1; i++) {
-                for (var key in this.data) {
-                    this.findClosestCentroid(this.data[key]);
-                    this.centroids[this.data[key].centroidId].addNode(key);
-                }
-            }
-
-            let count = len(this.centroids);
-            for (var key in this.centroids) {
-                if (this.centroids[key].memberIds.length < 5) {
-                    delete this.centroids[key];
-                } else {
-                    //say(this.centroids[key].describe() + "   members: " + this.centroids[key].memberIds.length);
-       //             say( j + "\t" + key + "\t" + this.centroids[key].memberIds.length);
-                    var totals = this.findAverages(this.centroids[key]);
-                }
-            }
-            say( j + " ...");
+        // tell each node where the closest controid is to it
+        for (var key in this.data) {
+            var id_distance = this.findClosestCentroid(this.data[key]);
+            let id = id_distance["id"];
+            let distance = id_distance["distance"];
+            this.data[key].setCentroid(id, distance);
+            //say(key + "  " + id + "   " + distance )
         }
 
+        // Step1: Prep to move each centroid to the new eigen_center...
+        // I.e. zero set the .vector space
+        for (var key in this.centroids) {
+            this.centroids[key].zeroOutVectorLocation();
+        }
 
-            for (var key in this.centroids) {
-            	var out = "";
-            	for ( var i = 0 ; i < this.centroids[key].memberIds.length; i++) {
+        // Step2: Add up all a centroid's member's vector spaces
+        for (var key in this.data) {
+            var id = this.data[key].centroidId;
+            this.centroids[id].donateVector(this.data[key].vector, key);
+        }
 
-            		out += this.centroids[key].memberIds[i] + ",";
-       //             say( j + "\t" + key + "\t" + this.centroids[key].memberIds.length);
-       //             var totals = this.findAverages(this.centroids[key]);
-                }
-                console.log( "update feedback set topic = '" + key + "' where rowid in (" + out + ")"); 
-            }
-
-
-
-
-
-
+        // Step3: Move! Divide the vector spaces by the number of donations
+        // to find the ave location. Set the centroid's vector to that.
+        for (var key in this.centroid) {
+            this.centroid[key].findVectorAverage();
+        }
     },
-    init: function(data, number_of_centroids, number_of_dimensions, min, max) {
-		//for ( var key in data ) {
-    	//	say(key + " | " + data[key]);
-    	//}
-		//say(".....................");
 
-        this.number_of_centroids = number_of_centroids;
-        this.number_of_dimensions = number_of_dimensions;
+    init: function(incoming_data, number_of_centroids, ranges) {
+        say("point count: " + len(incoming_data));
+        say("dimensions: " + ranges.length);
+
         this.data = {};
-        this.centroids = {};
-        for (var key in data) {
+        for (var key in incoming_data) {
             this.data[key] = new Vector(key);
-            this.data[key].vector = data[key];
+            this.data[key].vector = incoming_data[key];
         }
+        this.centroids = {};
         for (var i = 0; i < number_of_centroids; i++) {
             this.centroids[i] = new Vector(i);
-            var a = randomVector(number_of_dimensions, min, max);
-            this.centroids[i].vector = a;
+
+            var vector = [];
+            for (var j = 0; j < ranges.length; j++) {
+                let min = 0;
+                let max = ranges[j];
+                let result = Math.random() * (max - min) + min;
+                vector[j] = result;
+            }
+            this.centroids[i].vector = vector;
         }
-        this.move();
+        for (var i = 0; i < 20; i++) {
+            let thisTime = [];
+            this.move();
+        }
+
+        var count = 0;
+        for (var key in this.centroids) {
+            say(i + "   " + key + "    " + this.centroids[key].memberIds.length);
+            count += this.centroids[key].memberIds.length
+        }
+        say("Clustered " + count + " into " + len(this.centroids) + " clusters");
+
+        say("The end");
     },
-    findClosestCentroid: function(point_in_hyperplane) {
+    findClosestCentroid: function(datum) {
         var distance = 1000000;
         var id = "undefined";
         for (var key in this.centroids) {
             let c = this.centroids[key];
-            let d = CosignSimilarity.findSimilarity(point_in_hyperplane.vector, c.vector);
-            //say( point_in_hyperplane.vector + "   and " + c.vector); 
+            let d = CosignSimilarity.findSimilarity(datum.vector, c.vector);
             if (d < distance) {
                 distance = d;
                 id = c.id;
             }
         }
-        point_in_hyperplane.setCentroid(id, distance);
+        return {
+            "id": id,
+            "distance": distance
+        };
     }
 }
 
@@ -191,8 +170,29 @@ var Vector = function(id) {
     this.nextCentroidId = "";
     this.nextDistance = -1;
     this.memberIds = [];
+    this.donationCount = 0;
 }
 
+Vector.prototype.zeroOutVectorLocation = function() {
+    for (var index in this.vector) {
+        this.vector[index] = 0;
+    }
+    this.donationCount = 0;
+    this.memberIds = [];
+}
+
+Vector.prototype.donateVector = function(v, id) {
+    for (var i = 0; i < v.length; i++) {
+        this.vector[i] += v[i];
+        this.donationCount++;
+    }
+    this.memberIds.push(id);
+}
+Vector.prototype.findVectorAverage = function() {
+    for (var i = 0; i < this.vector.length; i++) {
+        this.vector[i] /= this.donationCount;
+    }
+}
 Vector.prototype.addInfo = function(location) {
     this.vector.push(location);
 }
@@ -207,12 +207,10 @@ Vector.prototype.describe = function() {
 Vector.prototype.zeroOut = function() {
     this.nearestId = "";
     this.nearest = 100;
-    //	this.vector = [];
     this.centroidId = "";
     this.distance = -1;
     this.nextCentroidId = "";
     this.nextDistance = -1;
-    this.memberIds = [];
 }
 
 Vector.prototype.setCentroid = function(cid, distance) {
@@ -246,8 +244,8 @@ try {
     /* Exports for testing, because node. When in actual use this will be called from a webpage - not via node */
     module.exports.KSM = KSM;
     module.exports.CosignSimilarity = CosignSimilarity;
-	module.exports.Vector = Vector;
-	module.exports.len = len;
+    module.exports.Vector = Vector;
+    module.exports.len = len;
 
 } catch (error) {
     console.log("Error: " + error);
