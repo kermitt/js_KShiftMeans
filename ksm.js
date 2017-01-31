@@ -38,13 +38,6 @@ var KSM = {
 
             this.data[key].setCentroid(id, distance);
             this.data[key].setCentroid2(id2, distance2);
-
-
-//console.log("ICHI " + id + "  |   " + id2 + "    d | " + distance + "    | "  + distance2); 
-//console.log("  NI " +  this.data[key].centroidId + " " + this.data[key].nextCentroidId + " d " + this.data[key].distance + "   | " + this.data[key].nextDistance);
-
-
-            //say(key + "  " + id + "   " + distance )
         }
 
         // Step1: Prep to move each centroid to the new eigen_center...
@@ -102,14 +95,30 @@ var KSM = {
             let thisTime = [];
             this.move();
 
-
             //for (var key in this.centroids) {
             //    console.log(this.centroids[key].describe() + "\t\t" + this.centroids[key].memberIds.length);
             //}
             //console.log("...");
         }
-
         this.showResults();
+        this.generateSQL();
+    },
+
+    generateSQL:function() { 
+        for ( var key in this.data ) { 
+            var o  = this.data[key];
+            var sql = "";
+            var d1 = parseFloat(o.distance);
+            var d2 = parseFloat(o.nextDistance);
+             
+            sql += "update feedback set centroid1=" + o.centroidId + ",";
+            sql += "centroid2=" + o.nextCentroidId + ",";
+            sql += "distance1=" + d1.toFixed(3) + ",";
+            sql += "distance2=" + d2.toFixed(3) + " ";
+            sql += "where rowid=" + o.id + ";";
+            
+            console.log(sql);
+        }
     },
 
     showResults: function() {
@@ -124,30 +133,35 @@ var KSM = {
             secondCentroids[id].push(key);
             //console.log(id + "   and  " + key ); 
         }
+        var out1 = "";
+        var out2 = "";
         for ( var key in secondCentroids) {
             var ary = secondCentroids[key];
-            //console.log("SECONDN:" + key + "  |   "  + ary);
+
             let sql = "update feedback set centroid2=" + key + " where rowid in (" + ary + ");"; 
-            console.log(sql);
-            console.log(key + "   |   "+ ary.length );
+            out1 += sql +"\n";
+            out2 += key + "   |   "+ ary.length + "\n";
         }
-
-
-
-
+        console.log(out1);
+        console.log()
+        console.log(out2);
         console.log("PRIMARY ---------------"); 
         var count = 0;
-        for (var key in this.centroids) {
-            
+        out1 = "";
+        out2 = "";
+        for (var key in this.centroids) {            
             if ( this.centroids[key].memberIds.length > 0 ){
                 let ary = this.centroids[key].memberIds;
-                //say(i + "   " + key + "    " + ary.length);
                 count += ary.length;
                 let sql = "update feedback set centroid1=" + key + " where rowid in (" + ary + ");"; 
-                console.log(sql);
-                console.log(this.centroids[key].memberIds.length + "   | " + this.centroids[key].describe() + " ");
+                out1 += sql + "\n";
+                out2 += this.centroids[key].memberIds.length + "   | " + this.centroids[key].describe() + "\n";
             }
         }
+        console.log(out1);
+        console.log("member count | vector");
+        console.log(out2);
+
         say("Clustered " + count + " into " + len(this.centroids) + " clusters");
         say("The end");
     },
@@ -165,10 +179,6 @@ var KSM = {
                 id_distance[d] = c.id;
             }
             id_distance[d] = c.id; 
-//            if (d < distance) {
-//                distance = d;
-//                id = c.id;
-//            }
         }
         var keys = []; 
         for ( var key in id_distance) {
@@ -176,15 +186,10 @@ var KSM = {
         }
         keys.sort();
 
-
-
         var id1 = id_distance[keys[0]];
         var id2 = id_distance[keys[1]];
         var distance1 = keys[0];
         var distance2 = keys[1];
-
-
-//        console.log("id1 " + id1 + "  id2 " + id2 + "     d1 " + distance1 + "   d2 " + distance2 );
 
         return {
             "id": id1,
@@ -192,11 +197,6 @@ var KSM = {
             "id2": id2,
             "distance2": distance2
         };
-
-//        return {
-//            "id": id,
-//            "distance": distance
-//        };
     }
 }
 
